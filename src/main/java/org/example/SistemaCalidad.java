@@ -4,7 +4,20 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class SistemaCalidad {
+    private Map<SensorType, Range> sensorRanges;
+
+    public SistemaCalidad() {
+        // Define los rangos permitidos para cada tipo de sensor
+        sensorRanges = new HashMap<>();
+        sensorRanges.put(SensorType.TEMPERATURE, new Range(68, 89));
+        sensorRanges.put(SensorType.PH, new Range(6, 8));
+        sensorRanges.put(SensorType.OXYGEN, new Range(2, 11));
+    }
+
     public void start() {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket subscriber = context.createSocket(SocketType.SUB);
@@ -37,16 +50,11 @@ public class SistemaCalidad {
     }
 
     private boolean isMeasurementInRange(SensorType sensorType, double value) {
-        // Implementa la lógica para verificar si la medición está dentro del rango especificado
-        // Puedes utilizar una estructura de datos que almacene los rangos permitidos para cada tipo de sensor
-        // y comparar la medición con los valores mínimos y máximos permitidos.
-        // Retorna true si está dentro del rango, false si está fuera del rango.
-        // Por ejemplo:
-        return switch (sensorType) {
-            case TEMPERATURE -> value >= 68 && value <= 89;
-            case PH -> value >= 6 && value <= 8;
-            case OXYGEN -> value >= 2 && value <= 11;
-        };
+        // Obtén el rango permitido para el tipo de sensor
+        Range range = sensorRanges.get(sensorType);
+
+        // Verifica si la medición está dentro del rango especificado
+        return range != null && range.isValueInRange(value);
     }
 
     private void generateAlarm(SensorType sensorType, double value) {
@@ -62,3 +70,5 @@ public class SistemaCalidad {
         sistemaCalidad.start();
     }
 }
+
+
