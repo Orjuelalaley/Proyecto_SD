@@ -9,12 +9,10 @@ import java.io.IOException;
 
 public class Monitor {
     private final SensorType sensorType;
-    private final String csvFileName; // Nombre del archivo CSV
-    private FileWriter csvWriter; // Objeto FileWriter para escribir en el archivo CSV
+    private FileWriter csvWriter;
 
-    public Monitor(SensorType sensorType, String databaseUrl, String csvFileName) {
+    public Monitor(SensorType sensorType, String csvFileName) {
         this.sensorType = sensorType;
-        this.csvFileName = csvFileName;
 
         try {
             this.csvWriter = new FileWriter(csvFileName);
@@ -26,7 +24,7 @@ public class Monitor {
     public void start() {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket subscriber = context.createSocket(SocketType.SUB);
-            subscriber.connect("tcp://localhost:5556");  // Conéctate al puerto donde publica el sensor
+            subscriber.connect("tcp://localhost:5559");  // Conéctate al puerto donde publica el sensor
             subscriber.subscribe(sensorType.toString().getBytes());
 
             while (true) {
@@ -88,7 +86,7 @@ public class Monitor {
 
     public static void main(String[] args) {
         // Ejemplo de cómo iniciar un monitor para el tipo de sensor TEMPERATURE
-        Monitor temperatureMonitor = new Monitor(SensorType.TEMPERATURE, "jdbc:mysql://localhost/sensor_data", "temperature_alarms.csv");
+        Monitor temperatureMonitor = new Monitor(SensorType.TEMPERATURE, "temperature_alarms.csv");
         temperatureMonitor.start();
     }
 }

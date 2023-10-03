@@ -9,19 +9,11 @@ import java.util.Map;
 
 public class SistemaCalidad {
     private Map<SensorType, Range> sensorRanges;
-
-    public SistemaCalidad() {
-        // Define los rangos permitidos para cada tipo de sensor
-        sensorRanges = new HashMap<>();
-        sensorRanges.put(SensorType.TEMPERATURE, new Range(68, 89));
-        sensorRanges.put(SensorType.PH, new Range(6, 8));
-        sensorRanges.put(SensorType.OXYGEN, new Range(2, 11));
-    }
-
     public void start() {
         try (ZContext context = new ZContext()) {
+            // Configurar socket para recibir datos del broker
             ZMQ.Socket subscriber = context.createSocket(SocketType.SUB);
-            subscriber.connect("tcp://localhost:5556");  // Conéctate al puerto donde publica el sensor
+            subscriber.connect("tcp://localhost:5556");  // Conéctate al puerto donde publican los sensores
             subscriber.subscribe("".getBytes());
 
             // Imprimir mensaje indicando que el Sistema de Calidad está listo
@@ -35,7 +27,6 @@ public class SistemaCalidad {
                 // Espera por un mensaje del sensor
                 byte[] message = subscriber.recv(0);
                 String[] parts = new String(message, ZMQ.CHARSET).split(" ");
-
                 // Procesa la medición
                 if (parts.length == 2) {
                     SensorType sensorType = SensorType.valueOf(parts[0]);
