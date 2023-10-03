@@ -3,9 +3,14 @@ package org.example;
 public class Main {
     public static void main(String[] args) {
         // Crear instancias de sensores con intervalos diferentes y puertos distintos
-        Sensor temperatureSensor = new Sensor(SensorType.TEMPERATURE, 2000, 5556);
-        Sensor phSensor = new Sensor(SensorType.PH, 3000, 5557);
-        Sensor oxygenSensor = new Sensor(SensorType.OXYGEN, 2500, 5558);
+        int temperaturePort = 5556;
+        int phPort = 5557;
+        int oxygenPort = 5558;
+
+        // Crear instancias de sensores con intervalos diferentes y puertos
+        Sensor temperatureSensor = new Sensor(SensorType.TEMPERATURE, 2000, temperaturePort);
+        Sensor phSensor = new Sensor(SensorType.PH, 3000, phPort);
+        Sensor oxygenSensor = new Sensor(SensorType.OXYGEN, 2500, oxygenPort);
 
         // Establecer la conexión ZeroMQ en los sensores
         temperatureSensor.connectToMonitor();
