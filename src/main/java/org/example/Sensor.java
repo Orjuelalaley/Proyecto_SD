@@ -9,14 +9,12 @@ import java.util.Random;
 public class Sensor {
     private final SensorType type;
     private final int interval;
-    private final ZContext context;
     private final ZMQ.Socket socket;
     private final Random random = new Random();
 
     public Sensor(SensorType type, int interval, ZMQ.Socket socket) {
         this.type = type;
         this.interval = interval;
-        this.context = new ZContext();
         this.socket = socket;
     }
 
@@ -51,7 +49,6 @@ public class Sensor {
     }
 
     private double generateValueInRange() {
-        // Generar un valor aleatorio dentro del rango específico para cada tipo de sensor
         return switch (type) {
             case TEMPERATURE -> 68 + (21 * random.nextDouble()); // Rango: [68, 89]
             case PH -> 6 + (2 * random.nextDouble()); // Rango: [6, 8]
@@ -60,7 +57,6 @@ public class Sensor {
     }
 
     private double generateValueOutOfRange() {
-        // Generar un valor aleatorio fuera del rango específico para cada tipo de sensor
         return switch (type) {
             case TEMPERATURE ->
                     random.nextDouble() < 0.5 ? 100 + random.nextDouble() * 10 : -10 - random.nextDouble() * 10;
@@ -70,7 +66,6 @@ public class Sensor {
     }
 
     private double generateValueInvalid() {
-        // Generar un valor inválido (negativo)
         return -random.nextDouble() * 10;
     }
 }

@@ -4,34 +4,37 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main {
     public static void main(String[] args) {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket socket = context.createSocket(SocketType.PUB);
-            socket.bind("tcp://localhost:5556"); // Enlazar el socket a un puerto único
+            socket.bind("tcp://10.195.70.156:5556"); // Enlazar el socket a un puerto único
 
-            // Crear instancias de sensores con intervalos diferentes
-            Sensor temperatureSensor = new Sensor(SensorType.TEMPERATURE, 2000, socket);
-            Sensor phSensor = new Sensor(SensorType.PH, 3000, socket);
-            Sensor oxygenSensor = new Sensor(SensorType.OXYGEN, 2500, socket);
+            // Crear una lista de sensores
+            List<Sensor> sensors = new ArrayList<>();
+            sensors.add(new Sensor(SensorType.TEMPERATURE, 5000, socket));
+            sensors.add(new Sensor(SensorType.PH, 3000, socket));
+            sensors.add(new Sensor(SensorType.OXYGEN, 2500, socket));
 
-            // Iniciar los sensores en hilos separados
-            Thread temperatureThread = new Thread(temperatureSensor::start);
-            Thread phThread = new Thread(phSensor::start);
-            Thread oxygenThread = new Thread(oxygenSensor::start);
+            // Iniciar y ejecutar cada sensor en hilos separados
+            List<Thread> sensorThreads = new ArrayList<>();
+            for (Sensor sensor : sensors) {
+                Thread sensorThread = new Thread(sensor::start);
+                sensorThread.start();
+                sensorThreads.add(sensorThread);
+            }
 
-            temperatureThread.start();
-            phThread.start();
-            oxygenThread.start();
-
-            // Esperar a que los hilos terminen (esto no es necesario si tu aplicación sigue ejecutándose)
-            try {
-                temperatureThread.join();
-                phThread.join();
-                oxygenThread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.err.println("Ocurrió un error al esperar a que los hilos terminen: " + e.getMessage());
+            // Esperar a que los hilos de los sensores terminen
+            for (Thread sensorThread : sensorThreads) {
+                try {
+                    sensorThread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Ocurrió un error al esperar a que los hilos terminen: " + e.getMessage());
+                }
             }
         }
     }

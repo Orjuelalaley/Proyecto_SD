@@ -9,8 +9,8 @@ public class Broker {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket frontend = context.createSocket(SocketType.XSUB);
             ZMQ.Socket backend = context.createSocket(SocketType.XPUB);
-            frontend.connect("tcp://*:5556");
-            backend.connect("tcp://*:5557");
+            frontend.connect("tcp://10.195.70.156:5556");
+            backend.connect("tcp://10.195.70.156:5557");
 
             // Conéctate a los sockets frontend y backend
             ZMQ.proxy(frontend, backend, null);
