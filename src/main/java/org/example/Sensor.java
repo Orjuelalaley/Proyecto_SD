@@ -8,8 +8,8 @@ import java.util.Random;
 
 public class Sensor {
     private final SensorType type;
-    private int interval;
-    private ZContext context;
+    private final int interval;
+    private final ZContext context;
     private ZMQ.Socket socket;
     private Random random = new Random();
 
@@ -46,7 +46,6 @@ public class Sensor {
 
     private double generateRandomMeasurement() {
         double randomNumber = random.nextDouble(); // Generar número aleatorio entre 0 y 1
-
         // Comparar el número aleatorio con las probabilidades para determinar el tipo de medición
         double probabilityOutOfRange = 0.3;
         // Probabilidades proporcionadas en el archivo de configuración
@@ -58,7 +57,6 @@ public class Sensor {
             // Valor fuera del rango
             return generateValueOutOfRange();
         } else {
-            // Valor inválido (negativo)
             return generateValueInvalid();
         }
     }

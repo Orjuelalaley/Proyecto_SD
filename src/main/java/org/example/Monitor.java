@@ -4,11 +4,23 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import java.io.FileWriter;
+import java.io.IOException;
+
 public class Monitor {
     private final SensorType sensorType;
+    private final String csvFileName; // Nombre del archivo CSV
+    private FileWriter csvWriter; // Objeto FileWriter para escribir en el archivo CSV
 
-    public Monitor(SensorType sensorType, String databaseUrl) {
+    public Monitor(SensorType sensorType, String databaseUrl, String csvFileName) {
         this.sensorType = sensorType;
+        this.csvFileName = csvFileName;
+
+        try {
+            this.csvWriter = new FileWriter(csvFileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void start() {
@@ -25,10 +37,8 @@ public class Monitor {
                 // Validar el mensaje y almacenar la medición si es válida
                 if (parts.length == 2 && SensorType.valueOf(parts[0]) == sensorType) {
                     double value = Double.parseDouble(parts[1]);
-
                     // Almacenar la medición en la base de datos o en el archivo
                     storeMeasurement(value);
-
                     // Verificar si la medición está fuera del rango y generar una alarma si es necesario
                     if (!isMeasurementInRange(value)) {
                         generateAlarm(value);
@@ -41,25 +51,44 @@ public class Monitor {
     private void storeMeasurement(double value) {
         // Implementa la lógica para almacenar la medición en la base de datos o en el archivo
         // Utiliza la URL de la base de datos (databaseUrl) para conectarte y guardar la medición.
+        // En este ejemplo, solo mostramos un mensaje en la consola.
+        System.out.println("Monitor de " + sensorType + " - Medición almacenada: " + value);
     }
 
     private boolean isMeasurementInRange(double value) {
-        // Implementa la lógica para verificar si la medición está dentro del rango especificado
-        // Retorna true si está dentro del rango, false si está fuera del rango.
-        // Puedes utilizar una estructura de datos que almacene los rangos permitidos para cada tipo de sensor.
-        return true; // Por ahora, consideramos que todas las mediciones están dentro del rango.
+        return switch (sensorType) {
+            case TEMPERATURE -> value >= 68 && value <= 89;
+            case PH -> value >= 6 && value <= 8;
+            case OXYGEN -> value >= 2 && value <= 11;
+        };
     }
 
     private void generateAlarm(double value) {
-        // Implementa la lógica para generar una alarma, por ejemplo, enviándola a un registro o un sistema de alerta.
-        // También puedes almacenar las alarmas en una base de datos o en un archivo según tus necesidades.
-        // Por ahora, muestra la alarma por pantalla como ejemplo:
-        System.out.println("Monitor de " + sensorType + " - Alarma generada: Medición fuera del rango - Valor: " + value);
+        // Genera el mensaje de alarma
+        String alarmMessage = generateAlarmMessage(value);
+        System.out.println(alarmMessage);
+        writeAlarmToCSV(alarmMessage);
     }
+
+    private String generateAlarmMessage(double value) {
+        // Crea un mensaje de alarma
+        return "Monitor de " + sensorType + " - Alarma generada: Medición fuera del rango - Valor: " + value;
+    }
+
+    private void writeAlarmToCSV(String alarmMessage) {
+        try {
+            // Escribe la alarma en el archivo CSV
+            csvWriter.write(alarmMessage + "\n");
+            csvWriter.flush(); // Asegura que los datos se escriban en el archivo
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static void main(String[] args) {
         // Ejemplo de cómo iniciar un monitor para el tipo de sensor TEMPERATURE
-        Monitor temperatureMonitor = new Monitor(SensorType.TEMPERATURE, "jdbc:mysql://localhost/sensor_data");
+        Monitor temperatureMonitor = new Monitor(SensorType.TEMPERATURE, "jdbc:mysql://localhost/sensor_data", "temperature_alarms.csv");
         temperatureMonitor.start();
     }
 }

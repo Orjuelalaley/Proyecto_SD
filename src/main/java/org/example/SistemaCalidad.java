@@ -21,11 +21,15 @@ public class SistemaCalidad {
     public void start() {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket subscriber = context.createSocket(SocketType.SUB);
-            subscriber.connect("tcp://localhost:5556");  // Conéctate al puerto donde publican los sensores
+            subscriber.connect("tcp://localhost:5556");  // Conéctate al puerto donde publica el sensor
             subscriber.subscribe("".getBytes());
 
             // Imprimir mensaje indicando que el Sistema de Calidad está listo
             System.out.println("Sistema de Calidad listo para recibir información.");
+
+            // Configurar socket para enviar alarmas a los Monitores
+            ZMQ.Socket alarmPublisher = context.createSocket(SocketType.PUB);
+            alarmPublisher.bind("tcp://localhost:5559");
 
             while (true) {
                 // Espera por un mensaje del sensor
@@ -43,6 +47,9 @@ public class SistemaCalidad {
                     if (!isMeasurementInRange(sensorType, value)) {
                         System.out.println("Sistema de Calidad - Alarma: Medición fuera del rango");
                         generateAlarm(sensorType, value);
+
+                        // Enviar alarma a los Monitores
+                        alarmPublisher.send(sensorType + " - " + value);
                     }
                 }
             }
@@ -70,5 +77,3 @@ public class SistemaCalidad {
         sistemaCalidad.start();
     }
 }
-
-
