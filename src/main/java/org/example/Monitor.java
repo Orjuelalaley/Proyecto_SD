@@ -7,14 +7,13 @@ import org.zeromq.ZMQ;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class Monitor {
     private final String type;
     private final ZMQ.Socket socket;
     private final BufferedWriter writer;
     private final ZMQ.Socket qualitySystemSocket;
+
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -27,10 +26,11 @@ public class Monitor {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket socket = context.createSocket(SocketType.SUB);
             socket.connect("tcp://localhost:5556");
-            socket.subscribe("");
+            socket.subscribe(type.getBytes(ZMQ.CHARSET));
 
             ZMQ.Socket qualitySystemSocket = context.createSocket(SocketType.PUSH);
-            qualitySystemSocket.connect("tcp://localhost:5558");
+            qualitySystemSocket.connect("tcp://localhost:5559");
+
 
             BufferedWriter writer = new BufferedWriter(new FileWriter("mediciones_" + type + ".txt"));
 
@@ -63,7 +63,7 @@ public class Monitor {
     }
 
     private void processMessage(String message) {
-        // Analizar el mensaje y verificar si está en rango y sin errores
+        // Analyze the message and check if it is in range and without errors
         String[] parts = message.split(" ");
         double value = Double.parseDouble(parts[1]);
         if (isInRange(value)) {
@@ -79,7 +79,7 @@ public class Monitor {
     }
 
     private boolean isInRange(double value) {
-        // Verificar si el valor está en rango según el tipo de sensor
+        // Check if the value is in range according to the type of sensor
         switch (type) {
             case "TEMPERATURE":
                 return value >= 68 && value <= 89;
@@ -92,15 +92,9 @@ public class Monitor {
         }
     }
 
-    private void sendToQualitySystem(String errorMessage) {
-        try (ZContext context = new ZContext()) {
-            ZMQ.Socket socket = context.createSocket(SocketType.PUSH);
-            socket.connect("tcp://localhost:5558");  // Puerto para el Sistema de Calidad (SC)
-
-            // Envía el mensaje de alarma
-            socket.send(errorMessage.getBytes(ZMQ.CHARSET));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private void sendToQualitySystem(String message) {
+        qualitySystemSocket.send(message.getBytes(ZMQ.CHARSET));
     }
+
+
 }
