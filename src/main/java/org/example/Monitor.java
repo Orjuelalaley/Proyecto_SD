@@ -27,7 +27,7 @@ public class Monitor {
         try (ZContext context = new ZContext()) {
             ZMQ.Socket socket = context.createSocket(SocketType.SUB);
             socket.connect("tcp://localhost:5556");
-            socket.subscribe("");
+            socket.subscribe(type.getBytes(ZMQ.CHARSET));
 
             ZMQ.Socket qualitySystemSocket = context.createSocket(SocketType.PUSH);
             qualitySystemSocket.connect("tcp://localhost:5558");
