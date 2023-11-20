@@ -3,30 +3,76 @@ package org.example;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
-
+import java.io.FileReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Properties;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Sensor {
-    private final SensorType type;
+    private final String type;
     private final int interval;
-    private final ZContext context;
     private final ZMQ.Socket socket;
     private final Random random = new Random();
+    private double probabilidadEnRango;
+    private double probabilidadFueraDeRango;
 
-    public Sensor(SensorType type, int interval, ZMQ.Socket socket) {
+    private double probabilidadErronea;
+    private static final Logger LOGGER = Logger.getLogger(Sensor.class.getName());
+
+    public static void main(String[] args) {
+        if (args.length != 3) {
+            System.out.println("Uso: Sensor <tipo> <intervalo> <ruta-config>");
+            System.exit(1);
+        }
+        String type = args[0];
+        int timestamp = Integer.parseInt(args[1]);
+        String file = args[2];
+        if (timestamp < 0) {
+            throw new NumberFormatException();
+        }
+        try (ZContext context = new ZContext()){
+            ZMQ.Socket socket = context.createSocket(SocketType.PUB);
+            socket.connect("tcp://localhost:5555");
+            Sensor sensor = new Sensor(type, timestamp, socket, file);
+            sensor.start();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
+        }
+    }
+
+    public Sensor(String type, int interval, ZMQ.Socket socket, String file) {
         this.type = type;
         this.interval = interval;
-        this.context = new ZContext();
         this.socket = socket;
+        readConfig(file);
+    }
+
+    private void readConfig(String file) {
+        try (FileReader reader = new FileReader(file)) {
+            Properties props = new Properties();
+            props.load(reader);
+            this.probabilidadEnRango = Double.parseDouble(props.getProperty("probabilidadEnRango"));
+            this.probabilidadFueraDeRango = Double.parseDouble(props.getProperty("probabilidadFueraDeRango"));
+             this.probabilidadErronea = Double.parseDouble(props.getProperty("probabilidadErronea"));
+            System.out.println("Probability in range: " + probabilidadEnRango);
+            System.out.println("Probabilidad out of range: " + probabilidadFueraDeRango);
+            System.out.println("Wrong probability: " + probabilidadErronea);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
+        }
     }
 
     public void start() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
                 double value = generateRandomMeasurement();
-                String message = type + " " + value;
+                String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+                String message = type + " " + value + " at " + timestamp;
                 socket.send(message.getBytes(ZMQ.CHARSET));
-                System.out.println("Sensor " + type + " - Medición: " + value);
+                System.out.println("Sensor " + type + " - Medición: " + value + " at " + timestamp);
                 Thread.sleep(interval);
             }
         } catch (InterruptedException e) {
@@ -36,41 +82,31 @@ public class Sensor {
 
     private double generateRandomMeasurement() {
         double randomNumber = random.nextDouble();
-        double probabilityOutOfRange = 0.3;
-        double probabilityCorrect = 0.6;
-        if (randomNumber < probabilityCorrect) {
-            // Valor correcto dentro del rango
+        if (randomNumber < probabilidadEnRango) {
             return generateValueInRange();
-        } else if (randomNumber < probabilityCorrect + probabilityOutOfRange) {
-            // Valor fuera del rango
+        } else if (randomNumber < probabilidadEnRango + probabilidadFueraDeRango) {
             return generateValueOutOfRange();
         } else {
-            // Valor inválido (negativo)
-            return generateValueInvalid();
+            return generateValueInvalid(probabilidadErronea);
         }
     }
-
     private double generateValueInRange() {
-        // Generar un valor aleatorio dentro del rango específico para cada tipo de sensor
         return switch (type) {
-            case TEMPERATURE -> 68 + (21 * random.nextDouble()); // Rango: [68, 89]
-            case PH -> 6 + (2 * random.nextDouble()); // Rango: [6, 8]
-            case OXYGEN -> 2 + (9 * random.nextDouble()); // Rango: [2, 11]
+            case "TEMPERATURE" -> 68 + (21 * random.nextDouble());
+            case "PH" -> 6 + (2 * random.nextDouble());
+            case "OXYGEN" -> 2 + (9 * random.nextDouble());
+            default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
-
     private double generateValueOutOfRange() {
-        // Generar un valor aleatorio fuera del rango específico para cada tipo de sensor
         return switch (type) {
-            case TEMPERATURE ->
-                    random.nextDouble() < 0.5 ? 100 + random.nextDouble() * 10 : -10 - random.nextDouble() * 10;
-            case PH -> random.nextDouble() < 0.5 ? 9 + random.nextDouble() * 2 : 12 + random.nextDouble() * 2;
-            case OXYGEN -> random.nextDouble() < 0.5 ? 1 + random.nextDouble() * 1 : 13 + random.nextDouble() * 1;
+            case "TEMPERATURE" -> random.nextDouble() < 0.5 ? 100 + random.nextDouble() * 10 : -10 - random.nextDouble() * 10;
+            case "PH" -> random.nextDouble() < 0.5 ? 9 + random.nextDouble() * 2 : 12 + random.nextDouble() * 2;
+            case "OXYGEN" -> random.nextDouble() < 0.5 ? 1 + random.nextDouble() * 1 : 13 + random.nextDouble() * 1;
+            default -> throw new IllegalStateException("Unexpected value: " + type);
         };
     }
-
-    private double generateValueInvalid() {
-        // Generar un valor inválido (negativo)
-        return -random.nextDouble() * 10;
+    private double generateValueInvalid(double probabilidadErronea) {
+        return -probabilidadErronea * 10;
     }
 }
