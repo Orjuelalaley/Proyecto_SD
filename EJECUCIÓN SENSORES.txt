@@ -1,0 +1,1 @@
+java -cp ".;C:\Users\sebao\.m2\repository\org\zeromq\jeromq\0.5.4\jeromq-0.5.4.jar" src/main/java/org/example/Sensor.java OXYGEN 2000 src/main/resources/SensorConfig.properties
