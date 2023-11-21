@@ -8,7 +8,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class Monitor {
+public class BackupMonitor {
     private final String type;
     private final ZMQ.Socket socket;
     private final BufferedWriter writer;
@@ -25,7 +25,7 @@ public class Monitor {
 
         try (ZContext context = new ZContext()) {
             ZMQ.Socket socket = context.createSocket(SocketType.SUB);
-            socket.connect("tcp://localhost:5556");
+            socket.connect("tcp://localhost:5560");
             socket.subscribe(type.getBytes(ZMQ.CHARSET));
 
             ZMQ.Socket qualitySystemSocket = context.createSocket(SocketType.PUSH);
@@ -34,14 +34,14 @@ public class Monitor {
 
             BufferedWriter writer = new BufferedWriter(new FileWriter("mediciones_" + type + ".txt"));
 
-            Monitor monitor = new Monitor(type, socket, writer, qualitySystemSocket);
-            monitor.start();
+            BackupMonitor backupMonitor = new BackupMonitor(type, socket, writer, qualitySystemSocket);
+            backupMonitor.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public Monitor(String type, ZMQ.Socket socket, BufferedWriter writer, ZMQ.Socket qualitySystemSocket) {
+    public BackupMonitor(String type, ZMQ.Socket socket, BufferedWriter writer, ZMQ.Socket qualitySystemSocket) {
         this.type = type;
         this.socket = socket;
         this.writer = writer;
