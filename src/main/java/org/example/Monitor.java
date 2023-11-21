@@ -13,7 +13,8 @@ public class Monitor {
     private final ZMQ.Socket socket;
     private final BufferedWriter writer;
     private final ZMQ.Socket qualitySystemSocket;
-
+    private final BufferedWriter timeWriter;
+    private final BufferedWriter memoryWriter;
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -31,21 +32,24 @@ public class Monitor {
             ZMQ.Socket qualitySystemSocket = context.createSocket(SocketType.PUSH);
             qualitySystemSocket.connect("tcp://localhost:5559");
 
-
             BufferedWriter writer = new BufferedWriter(new FileWriter("mediciones_" + type + ".txt"));
+            BufferedWriter timeWriter = new BufferedWriter(new FileWriter("tiempo_de_ejecucion.txt"));
+            BufferedWriter memoryWriter = new BufferedWriter(new FileWriter("memoria.txt"));
 
-            Monitor monitor = new Monitor(type, socket, writer, qualitySystemSocket);
+            Monitor monitor = new Monitor(type, socket, writer, qualitySystemSocket, timeWriter, memoryWriter);
             monitor.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public Monitor(String type, ZMQ.Socket socket, BufferedWriter writer, ZMQ.Socket qualitySystemSocket) {
+    public Monitor(String type, ZMQ.Socket socket, BufferedWriter writer, ZMQ.Socket qualitySystemSocket, BufferedWriter timeWriter, BufferedWriter memoryWriter) {
         this.type = type;
         this.socket = socket;
         this.writer = writer;
         this.qualitySystemSocket = qualitySystemSocket;
+        this.timeWriter = timeWriter;
+        this.memoryWriter = memoryWriter;
     }
 
     public void start() {
@@ -53,13 +57,32 @@ public class Monitor {
             System.out.println("Esperando mensajes del sensor...");
 
             while (!Thread.currentThread().isInterrupted()) {
+                // Medir la memoria antes de procesar el mensaje
+                long memoryBefore = getMemoryUsage();
+
                 String message = socket.recvStr(0);
                 System.out.println(message);
+                long startTime = System.nanoTime();
                 processMessage(message);
+                long endTime = System.nanoTime();
+                long executionTime = endTime - startTime;
+
+                // Medir la memoria después de procesar el mensaje
+                long memoryAfter = getMemoryUsage();
+                long memoryUsed = memoryAfter - memoryBefore;
+
+
+                writeTimeToFile(executionTime);
+                writeMemoryToFile(memoryUsed);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private long getMemoryUsage() {
+        Runtime runtime = Runtime.getRuntime();
+        return runtime.totalMemory() - runtime.freeMemory();
     }
 
     private void processMessage(String message) {
@@ -68,13 +91,43 @@ public class Monitor {
         double value = Double.parseDouble(parts[1]);
         if (isInRange(value)) {
             try {
+                long startTime = System.nanoTime();
                 writer.write(message + "\n");
                 writer.flush();
+                long endTime = System.nanoTime();
+                long executionTime = endTime - startTime;
+                System.out.println("Tiempo de escritura en el archivo: " + executionTime + " ns");
+
+                // Medir la memoria después de escribir en el archivo
+                long memoryAfter = getMemoryUsage();
+                long memoryUsed = memoryAfter - startTime;
+                System.out.println("Memoria utilizada después de escritura: " + memoryUsed + " bytes");
+
+                writeTimeToFile(executionTime);
+                writeMemoryToFile(memoryUsed);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
             sendToQualitySystem("¡Alarma! Medida fuera de rango para el tipo " + type + ": " + message);
+        }
+    }
+
+    private void writeTimeToFile(long executionTime) {
+        try {
+            timeWriter.write(executionTime + "\n");
+            timeWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeMemoryToFile(long memoryUsed) {
+        try {
+            memoryWriter.write(memoryUsed + "\n");
+            memoryWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -95,6 +148,4 @@ public class Monitor {
     private void sendToQualitySystem(String message) {
         qualitySystemSocket.send(message.getBytes(ZMQ.CHARSET));
     }
-
-
 }

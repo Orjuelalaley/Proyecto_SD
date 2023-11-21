@@ -7,7 +7,7 @@ import org.zeromq.ZMQ;
 public class Broker {
     public static void main(String[] args) {
         try (ZContext context = new ZContext()) {
-            while (true) {
+
                 ZMQ.Socket frontend = context.createSocket(SocketType.XSUB);
                 ZMQ.Socket backend = context.createSocket(SocketType.XPUB);
                 frontend.bind("tcp://localhost:5555"); // Sensores se conectan aquí
@@ -22,8 +22,8 @@ public class Broker {
                 System.out.println("Esperando conexión del monitor...");
 
                 long startTime = System.currentTimeMillis();
-                while (System.currentTimeMillis() - startTime < 5000) {
-                    int pollResult = poller.poll(1000); // Esperar hasta 1 segundo por eventos
+                while (System.currentTimeMillis() - startTime < 10000) {
+                    int pollResult = poller.poll(5000); // Esperar hasta 1 segundo por eventos
                     if (pollResult > 0) {
                         // Conexión establecida, salir del bucle
                         break;
@@ -45,7 +45,7 @@ public class Broker {
 
                 // Iniciar la proxy después de manejar la conexión del monitor
                 ZMQ.proxy(frontend, backend, null);
-            }
+
         }
     }
 }
