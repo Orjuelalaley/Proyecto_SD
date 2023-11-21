@@ -26,7 +26,7 @@ public class BackupMonitor {
 
         try (ZContext context = new ZContext()) {
             ZMQ.Socket socket = context.createSocket(SocketType.SUB);
-            socket.connect("tcp://localhost:5556");
+            socket.connect("tcp://localhost:5560");
             socket.subscribe(type.getBytes(ZMQ.CHARSET));
 
             ZMQ.Socket qualitySystemSocket = context.createSocket(SocketType.PUSH);
@@ -66,11 +66,12 @@ public class BackupMonitor {
                 processMessage(message);
                 long endTime = System.nanoTime();
                 long executionTime = endTime - startTime;
+                System.out.println("Tiempo de almacenamiento: " + executionTime + " ns");
 
                 // Medir la memoria después de procesar el mensaje
                 long memoryAfter = getMemoryUsage();
                 long memoryUsed = memoryAfter - memoryBefore;
-
+                System.out.println("Memoria utilizada: " + memoryUsed + " bytes");
 
                 writeTimeToFile(executionTime);
                 writeMemoryToFile(memoryUsed);
@@ -96,12 +97,12 @@ public class BackupMonitor {
                 writer.flush();
                 long endTime = System.nanoTime();
                 long executionTime = endTime - startTime;
-
+                System.out.println("Tiempo de escritura en el archivo: " + executionTime + " ns");
 
                 // Medir la memoria después de escribir en el archivo
                 long memoryAfter = getMemoryUsage();
                 long memoryUsed = memoryAfter - startTime;
-
+                System.out.println("Memoria utilizada después de escritura: " + memoryUsed + " bytes");
 
                 writeTimeToFile(executionTime);
                 writeMemoryToFile(memoryUsed);

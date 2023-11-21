@@ -66,11 +66,12 @@ public class Monitor {
                 processMessage(message);
                 long endTime = System.nanoTime();
                 long executionTime = endTime - startTime;
+                System.out.println("Tiempo de almacenamiento: " + executionTime + " ns");
 
                 // Medir la memoria después de procesar el mensaje
                 long memoryAfter = getMemoryUsage();
                 long memoryUsed = memoryAfter - memoryBefore;
-
+                System.out.println("Memoria utilizada: " + memoryUsed + " bytes");
 
                 writeTimeToFile(executionTime);
                 writeMemoryToFile(memoryUsed);

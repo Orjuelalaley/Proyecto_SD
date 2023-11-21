@@ -9,11 +9,11 @@ public class BackupQualitySystem {
             ZMQ.Socket socket = context.createSocket(SocketType.PULL);
             socket.bind("tcp://localhost:5559");  // Usamos un puerto diferente al de Broker
 
-            System.out.println("QualitySystem esperando alertas...");
+            System.out.println("BackupQualitySystem iniciado, esperando Alertas...");
 
             while (true) {
                 String message = socket.recvStr(0);
-                System.out.println("Mensaje recibido:  " + message);
+                System.out.println("Mensaje recibido de Monitor: " + message);
             }
         }
     }
