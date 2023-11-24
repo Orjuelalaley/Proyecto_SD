@@ -9,3 +9,5 @@ comando para correr un sensor en especifico:java -cp ".;C:\Users\carli\.m2\repos
 tener en cuenta que al lado de la métrica que esta leyendo el sensor toca poner el tiempo que quiere que tarde en enviar las mediciones
 
 comando para correr el monitorjava -cp ".;C:\Users\carli\.m2\repository\org\zeromq\jeromq\0.5.2\jeromq-0.5.2.jar" src\main\java\org\example\Monitor.java OXYGEN
+
+Trabajo escrito: https://docs.google.com/document/d/1hZtaE68MShX3aJfWvCIr1-nCpqKBgRiNcVD3e8n18Hs/edit?usp=sharing
